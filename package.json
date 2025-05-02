@@ -1,5 +1,5 @@
 {
-  "name": "vercelapi",
+  "name": "hppsrc",
   "version": "1.0.0",
   "description": "",
   "type": "commonjs",
@@ -9,9 +9,8 @@
   },
   "keywords": [],
   "author": "hppsrc",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "dependencies": {
-    "express": "^4.21.2",
-    "feather-icons": "^4.29.2"
+    "express": "^4.21.2"
   }
 }
