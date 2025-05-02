@@ -1,0 +1,31 @@
+[
+
+	{
+
+		"postID": "9bsM15",
+		"title": "New site",
+		"content": "Finally, I have created a new site using Vercel.<br>A dedicated place finally for my stuff.",
+		"timeStamp": "1746148962",
+		"url": null
+
+	},
+	{
+
+		"postID": "sy7oxx",
+		"title": "Blog update",
+		"content": "Now using the ID of the post, I can make a focus to highlight a more specific, quite great, test with the related link. ",
+		"timeStamp": "1740940792",
+		"url": "../blog/#sy7oxx"
+
+	},
+	{
+
+		"postID" : "indfdc",
+		"title" : "Welcome to my blog!",
+		"content" : " This is the first post of a blog<i>-ish</i> that I have made in my life, because I feel that it is necessary to keep a personal record of what I do. <br><br> I have built this a lightweight JSON/JS architecture, maybe it is not the best way to do so, but for now it is enough. <br><br> <b> Some stuff I have implemented here: </b> <br> <li> An URL-based post highlighting using the postID. </li> <br> <li> Automatic 'Most Recent Post' text </li> <br> <li> Time formatting. (plus relative timestamps) </li> <br> <li> JSON render content HTML Render (Not a feature, more like, it is what should happen) </li> <br><br> I will add a banner image for each post and at the same time do it Open Source, but right now I make a VS code extension :) <br><br> <b> Thank you for reading! </b> ",
+		"timeStamp" : "1740933690",
+		"url" : null
+
+	}
+
+]

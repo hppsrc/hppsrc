@@ -1,0 +1,63 @@
+* {
+	color: #fffe;
+	/* font-family: sans-serif; */
+	transition: all 1s;
+}
+
+html {
+	body {
+		padding: 0 25%;
+		max-width: 50%;
+		background-color: #111;
+
+		#error {
+			color: #f22;
+		}
+
+		.post {
+			padding: 1em;
+			margin: 1em;
+
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+
+			border: solid 1px #555;
+
+			div {
+				display: flex;
+				flex-direction: row;
+				justify-content: space-between;
+				align-items: center;
+
+				h1, h2, h3, h4, h5, h6, p {
+					padding: 0;
+					margin: 0;
+				}
+
+				.postID {
+					color: #555;
+					font-size: xx-small;
+				}
+
+				.showPost {
+					cursor: pointer;
+					text-decoration: underline;
+				}
+			}
+
+			&.highlight{
+				box-shadow: 0em 0em 1em #4A90E2 ;
+			}
+
+			&.new{
+				background-color: #3498DB ;
+			}
+		}
+
+		small {
+			color: #fffa;
+			font-style: italic;
+		}
+	}
+}

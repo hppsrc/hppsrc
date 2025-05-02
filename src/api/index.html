@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.css">
+	<title>Hppsrc API</title>
+
+	<style>
+
+		body {
+            background-color: #111;
+            color: #eee;
+            font-family: monospace;
+        }
+
+        h1, h2, h3, h4, h5, h6, p, strong {
+            color: #eee;
+        }
+
+        .notice, svg {
+            cursor: pointer;
+            padding: 0.25em;
+            border: solid #dbdbdb 1px;
+        }
+
+        .notice:not(svg) {
+			border: solid #f77 1px;
+            cursor: unset;
+            padding: 1em;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+        }
+
+        li > * {
+            margin-right: 0.25em;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+		}
+
+		code {
+			color: #000;
+		}
+
+	</style>
+
+	<script src="https://unpkg.com/feather-icons"></script>
+
+</head>
+<body>
+
+	<h1>Hppsrc API</h1>
+
+	<p>This is not a real API ... kinda.</p>
+
+	<div>
+
+		<div class="notice" >
+
+			<p><strong>Any request of the API with "ps-" will only be available using irm and iex with powershell.</strong></p>
+			<p>Format: <code>/api/ps-&lt;powershell script name&gt;</code></p>
+			<p>Example: <code>irm "https://hppsrc.vercel.app/api/ps-ping" | iex</code></p>
+
+		</div>
+
+		<div class="endpoints">
+
+			<h2>Endpoints</h2>
+			<ul>
+
+                <li>
+                    <i data-feather="copy" title="Copy" onclick="navigator.clipboard.writeText('https://hppsrc.vercel.app/api/ps-ping')"></i>
+                    <strong>ping:</strong>
+                    <a href="/api/ps-ping/">/api/ps-ping</a>
+                    <p> &VerticalSeparator; Get a pong</p>
+                </li>
+
+                <li>
+                    <i data-feather="copy" title="Copy" onclick="navigator.clipboard.writeText('https://hppsrc.vercel.app/api/ps-timer')"></i>
+                    <strong>timer:</strong>
+                    <a href="/api/ps-timer/">/api/ps-timer</a>
+                    <p> &VerticalSeparator; Open a timer</p>
+                </li>
+
+                <li>
+                    <i data-feather="copy" title="Copy" onclick="navigator.clipboard.writeText('https://hppsrc.vercel.app/api/ps-installer')"></i>
+                    <strong>installer:</strong>
+                    <a href="/api/ps-installer/">/api/ps-installer</a>
+                    <p> &VerticalSeparator; Hppsrc script installer</p>
+                </li>
+
+			</ul>
+
+		</div>
+
+	</div>
+
+</body>
+
+<script> feather.replace(); </script>
+
+</html>

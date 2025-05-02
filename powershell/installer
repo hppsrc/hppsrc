@@ -1,0 +1,48 @@
+
+#
+#	Hppsrc Powershell File
+#
+# 	Script installer
+#	Build 25042414
+#
+
+Clear-Host
+
+Write-Host "=== Hppsrc Script Installation Menu ===" -ForegroundColor Cyan
+
+Write-Host "`nPlease select which script you want to install:`n"
+
+Write-Host "1. Dioxide" -ForegroundColor Yellow
+Write-Host "  Dioxide is a Zoxide clone made with in Windows Batch and Powershell.`n"
+
+Write-Host "x. Exit"
+
+$choice = Read-Host "Enter your choice"
+
+
+switch ($choice) {
+
+	"1" {
+
+		$scriptName = "Dioxide"
+		$url = "https://raw.githubusercontent.com/hppsrc/dioxide/refs/heads/main/main.bat"
+		$outFile = Join-Path $env:TEMP "main.bat"
+		Invoke-WebRequest -Uri $url -OutFile $outFile
+		Start-Process -FilePath $outFile -Wait
+		Remove-Item $outFile
+
+	}
+
+	"2" { Write-Host "Installing Script 2..." -ForegroundColor Green }
+
+	"3" { Write-Host "Installing Script 3..." -ForegroundColor Green }
+
+	"x" { $null }
+
+	default { Write-Host "Invalid choice." -ForegroundColor Red }
+
+}
+
+if ($choice -ne "x") {
+	Write-Host "`n=== $scriptName Installation Complete ===" -ForegroundColor Green
+}

@@ -1,0 +1,17 @@
+{
+  "name": "vercelapi",
+  "version": "1.0.0",
+  "description": "",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "hppsrc",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "feather-icons": "^4.29.2"
+  }
+}
