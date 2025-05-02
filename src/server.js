@@ -1,5 +1,4 @@
 const express = require('express');
-const feather = require('feather-icons');
 
 const port = 3000;
 const path = require('path');
