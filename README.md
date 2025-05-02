@@ -4,9 +4,10 @@ Software engineer student with 6+ years of experience in web and software develo
 
 ## 🌐 Find me at
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/horacio-henao-henao-ripoll-18396334b/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/horahenaripo/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/hppsrc)
 [![Email](https://img.shields.io/badge/Email-0078D4?style=flat-square&logo=microsoft-outlook&logoColor=white)](mailto:hppsrc@outlook.com)
+![Profile Views](https://komarev.com/ghpvc/?username=hppsrc&style=flat-square)
 
 ## 💻 Tech Stack
 
@@ -45,13 +46,11 @@ Software engineer student with 6+ years of experience in web and software develo
 ![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=hppsrc&layout=donut-vertical)
 
 ## 🔍 Currently Working On
-- VS Code extension: XAMPP Control
+<!-- - VS Code extension: XAMPP Control -->
 - Web development projects with React and Node.js
-- Various PowerShell utilities
+<!-- - Various PowerShell utilities -->
 
 ## 📫 Contact
 - Email: hppsrc@outlook.com
-- LinkedIn: [Horacio Henao Henao Ripoll](https://www.linkedin.com/in/horacio-henao-henao-ripoll-18396334b/)
+- LinkedIn: [Horacio Henao  Ripoll](https://www.linkedin.com/in/horahenaripo/)
 - GitHub: [@hppsrc](https://github.com/hppsrc)
-
-![Profile Views](https://komarev.com/ghpvc/?username=hppsrc&style=flat-square)
