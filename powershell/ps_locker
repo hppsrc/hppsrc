@@ -1,0 +1,493 @@
+if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+	[System.Windows.Forms.MessageBox]::Show("You have to run this script as admin.", "Admin Privileges Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	exit 1
+}
+
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$Form = New-Object System.Windows.Forms.Form
+$Form.ClientSize = New-Object System.Drawing.Size(450,400)
+$Form.Text = "UDC PC Admin"
+$Form.StartPosition = "CenterScreen"
+$Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
+$Form.MaximizeBox = $false
+
+$TargetVersion = "1.2.2"
+
+#region ACTION FUNCTIONS
+function Install-Powershell-7 {
+	param (
+		[bool]$msgbox
+	)
+
+	$Overlay = Show-Overlay -Message "Installing PowerShell 7..." -Opacity 80 -ParentForm $Form
+
+	Start-Sleep -Milliseconds 500
+
+	if ($msgbox) {
+		Start-Process powershell -ArgumentList '-NoProfile -Command "Invoke-RestMethod \"http://hppsrc.vercel.app/api/ps-ps7_install\" | Invoke-Expression"' -WindowStyle Hidden -Wait
+	} else {
+		Start-Process powershell -ArgumentList '-NoProfile -Command "Invoke-RestMethod \"http://hppsrc.vercel.app/api/ps-ps7_install_nw\" | Invoke-Expression"' -WindowStyle Hidden -Wait
+	}
+
+	# Extra check for PowerShell 7 installation
+	$pwshPaths = @(
+		"$env:ProgramFiles\PowerShell\7\pwsh.exe",
+		"$env:ProgramFiles\PowerShell\7-preview\pwsh.exe"
+	)
+
+	$isInstalled = $false
+	foreach ($path in $pwshPaths) {
+		if (Test-Path $path) {
+			$isInstalled = $true
+		}
+	}
+
+	if ($isInstalled) {
+		if ($msgbox) {
+			[System.Windows.Forms.MessageBox]::Show("PowerShell 7 installation complete.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+		}
+	} else {
+		[System.Windows.Forms.MessageBox]::Show("PowerShell 7 installation failed.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	}
+
+	Hide-Overlay -OverlayForm $Overlay
+
+}
+
+function Set-RegistryKey {
+	param (
+		[bool]$msgbox
+	)
+
+	$Overlay = Show-Overlay -Message "Installing REG values" -Opacity 80 -ParentForm $Form
+
+	Start-Sleep -Milliseconds 500
+
+    try {
+
+        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+        $regName = "UDC_PC_Admin_Control"
+        $regValue = 'wscript.exe "C:\Windows\UDCPCAdmin\runner.vbs"'
+
+        Set-ItemProperty -Path $regPath -Name $regName -Value $regValue -Type String
+
+		if ($msgbox) {
+			[System.Windows.Forms.MessageBox]::Show("Registry key set successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+		}
+
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("Error setting registry key: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+
+	Hide-Overlay -OverlayForm $Overlay
+}
+
+function Install-Files {
+	param (
+		[bool]$msgbox
+	)
+
+	$Overlay = Show-Overlay -Message "Downloading and extracting files..." -Opacity 80 -ParentForm $Form
+
+	Start-Sleep -Milliseconds 500
+
+    try {
+
+        $urlVersion = $VersionTextBox.Text -replace '\.', '_'
+        $downloadUrl = "http://hppsrc.vercel.app/api/dl/admin_${urlVersion}.zip"
+        $tempFile = Join-Path $env:TEMP "admin_${urlVersion}.zip"
+        $targetDir = "C:\Windows\UDCPCAdmin"
+
+        if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+        }
+
+		Get-ChildItem -Path $targetDir -Recurse | Remove-Item -Force -Recurse
+
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile
+
+		Expand-Archive -Path $tempFile -DestinationPath $targetDir -Force
+
+        Remove-Item $tempFile -Force
+
+        Hide-Overlay -OverlayForm $Overlay
+
+        if ($msgbox) {
+			[System.Windows.Forms.MessageBox]::Show("Files installed successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+		}
+
+    } catch {
+
+        [System.Windows.Forms.MessageBox]::Show( "Error copying files: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+
+    }
+
+	Hide-Overlay -OverlayForm $Overlay
+
+}
+
+function Remove-RegistryKey {
+	param (
+		[bool]$msgbox
+	)
+
+	$Overlay = Show-Overlay -Message "Removing Registry Keys..." -Opacity 80 -ParentForm $Form
+
+    try {
+
+        $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+        $regName = "UDC_PC_Admin_Control"
+
+        Remove-ItemProperty -Path $regPath -Name $regName -ErrorAction Stop
+
+		if ($msgbox) {
+			[System.Windows.Forms.MessageBox]::Show( "Registry key removed successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+		}
+
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show( "Error removing registry key: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+    }
+
+	Hide-Overlay -OverlayForm $Overlay
+
+}
+
+function Uninstall-Files {
+	param (
+		[bool]$msgbox
+	)
+
+	$Overlay = Show-Overlay -Message "Removing files..." -Opacity 80 -ParentForm $Form
+
+	try {
+
+		$targetDir = "C:\Windows\UDCPCAdmin"
+
+		if (Test-Path $targetDir) {
+
+			Remove-Item -Path $targetDir -Recurse -Force -ErrorAction Stop
+
+			if ($msgbox) {
+				[System.Windows.Forms.MessageBox]::Show( "Folder removed successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+			}
+
+		} else {
+			if ($msgbox) {
+				[System.Windows.Forms.MessageBox]::Show( "Folder does not exist.", "Info", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+			}
+		}
+
+	} catch {
+		[System.Windows.Forms.MessageBox]::Show( "Error removing folder: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+	}
+
+	Hide-Overlay -OverlayForm $Overlay
+
+}
+
+#region OVERLAY FUNCTIONS
+function Show-Overlay {
+    param (
+        [string]$Message = "Processing...",
+        [int]$Opacity = 80,
+        [System.Windows.Forms.Form]$ParentForm
+    )
+    $Overlay = New-Object System.Windows.Forms.Form
+    $Overlay.FormBorderStyle = 'None'
+    $Overlay.StartPosition = 'Manual'
+    $Overlay.ShowInTaskbar = $false
+    $Overlay.BackColor = [System.Drawing.Color]::Black
+    $Overlay.Opacity = $Opacity / 100
+    $Overlay.Size = $ParentForm.Size
+    $Overlay.Location = $ParentForm.Location
+    $Overlay.Owner = $ParentForm
+
+    $Label = New-Object System.Windows.Forms.Label
+    $Label.Text = $Message
+    $Label.ForeColor = [System.Drawing.Color]::White
+    $Label.BackColor = [System.Drawing.Color]::Transparent
+    $Label.Font = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
+    $Label.AutoSize = $true
+    $Overlay.Controls.Add($Label)
+
+    $Label.Location = New-Object System.Drawing.Point(
+        [math]::Max(0, ($Overlay.Width - $Label.Width) / 2),
+        [math]::Max(0, ($Overlay.Height - $Label.Height) / 2)
+    )
+
+    $Overlay.Show()
+    return $Overlay
+}
+
+function Hide-Overlay {
+	param (
+		[System.Windows.Forms.Form]$OverlayForm
+	)
+	if ($OverlayForm -and !$OverlayForm.IsDisposed) {
+		$OverlayForm.Close()
+		$OverlayForm.Dispose()
+	}
+}
+
+#region CREATE VERSION LABEL
+$VersionLabel = New-Object System.Windows.Forms.Label
+$VersionLabel.Location = New-Object System.Drawing.Point(20,20)
+$VersionLabel.Size = New-Object System.Drawing.Size(60,20)
+$VersionLabel.Text = "Version:"
+$Form.Controls.Add($VersionLabel)
+
+#region CREATE VERSION TEXTBOX
+$VersionTextBox = New-Object System.Windows.Forms.TextBox
+$VersionTextBox.Location = New-Object System.Drawing.Point(90,20)
+$VersionTextBox.Size = New-Object System.Drawing.Size(100,20)
+$VersionTextBox.Text = $TargetVersion
+$VersionTextBox.ReadOnly = $false
+$Form.Controls.Add($VersionTextBox)
+
+#region CREATE AUTO INSTALL BUTTON
+$AutoInstallButton = New-Object System.Windows.Forms.Button
+$AutoInstallButton.Location = New-Object System.Drawing.Point(20,60)
+$AutoInstallButton.Size = New-Object System.Drawing.Size(100,30)
+$AutoInstallButton.Text = "Auto Install"
+$AutoInstallButton.Add_Click({
+
+	$AutoInstallButton.Enabled = $false
+
+	Install-Powershell-7 -msgbox $false
+	Set-RegistryKey -msgbox $false
+	Install-Files -msgbox $false
+
+	$AutoInstallButton.Enabled = $true
+
+})
+$Form.Controls.Add($AutoInstallButton)
+
+#region CREATE AUTO UNINSTALL BUTTON
+$AutoUninstallButton = New-Object System.Windows.Forms.Button
+$AutoUninstallButton.Location = New-Object System.Drawing.Point(130,60)
+$AutoUninstallButton.Size = New-Object System.Drawing.Size(100,30)
+$AutoUninstallButton.Text = "Auto Uninstall"
+$AutoUninstallButton.Add_Click({
+
+	$AutoUninstallButton.Enabled = $false
+
+	Remove-RegistryKey -msgbox $false
+	Uninstall-Files -msgbox $false
+
+	$AutoUninstallButton.Enabled = $true
+})
+$Form.Controls.Add($AutoUninstallButton)
+
+#region CREATE MANUAL INSTALL LABEL
+$ManualLabel = New-Object System.Windows.Forms.Label
+$ManualLabel.Location = New-Object System.Drawing.Point(20,110)
+$ManualLabel.Size = New-Object System.Drawing.Size(100,20)
+$ManualLabel.Text = "Manual Install:"
+$Form.Controls.Add($ManualLabel)
+
+#region UPDATE PS7 BUTTON
+$UpdatePS7 = New-Object System.Windows.Forms.Button
+$UpdatePS7.Location = New-Object System.Drawing.Point(20,130)
+$UpdatePS7.Size = New-Object System.Drawing.Size(100,30)
+$UpdatePS7.Text = "Update PS7"
+$UpdatePS7.Add_Click({ Install-Powershell-7 -msgbox $true })
+$Form.Controls.Add($UpdatePS7)
+
+#region ADD SET REG BUTTON
+$SetRegButton = New-Object System.Windows.Forms.Button
+$SetRegButton.Location = New-Object System.Drawing.Point(130,130)
+$SetRegButton.Size = New-Object System.Drawing.Size(100,30)
+$SetRegButton.Text = "Set REG"
+$SetRegButton.Add_Click({ Set-RegistryKey -msgbox $true })
+$Form.Controls.Add($SetRegButton)
+
+#region ADD COPY FILES BUTTON
+$CopyFilesButton = New-Object System.Windows.Forms.Button
+$CopyFilesButton.Location = New-Object System.Drawing.Point(240,130)
+$CopyFilesButton.Size = New-Object System.Drawing.Size(100,30)
+$CopyFilesButton.Text = "Install Files"
+$CopyFilesButton.Add_Click({ Install-Files -msgbox $true })
+$Form.Controls.Add($CopyFilesButton)
+
+#region MANUAL UNINSTALL LABEL
+$ManualUninstallLabel = New-Object System.Windows.Forms.Label
+$ManualUninstallLabel.Location = New-Object System.Drawing.Point(20,170)
+$ManualUninstallLabel.Size = New-Object System.Drawing.Size(100,20)
+$ManualUninstallLabel.Text = "Manual Uninstall:"
+$Form.Controls.Add($ManualUninstallLabel)
+
+#region ADD REMOVE REG BUTTON
+$RemoveRegButton = New-Object System.Windows.Forms.Button
+$RemoveRegButton.Location = New-Object System.Drawing.Point(130,190)
+$RemoveRegButton.Size = New-Object System.Drawing.Size(100,30)
+$RemoveRegButton.Text = "Remove REG"
+$RemoveRegButton.Add_Click({ Remove-RegistryKey -msgbox $true })
+$Form.Controls.Add($RemoveRegButton)
+
+#region ADD REMOVE FOLDER BUTTON
+$RemoveFolderButton = New-Object System.Windows.Forms.Button
+$RemoveFolderButton.Location = New-Object System.Drawing.Point(240,190)
+$RemoveFolderButton.Size = New-Object System.Drawing.Size(100,30)
+$RemoveFolderButton.Text = "Remove Folder"
+$RemoveFolderButton.Add_Click({ Uninstall-Files -msgbox $true })
+$Form.Controls.Add($RemoveFolderButton)
+
+#region ADD MANAGER LABEL
+$ManagerLabel = New-Object System.Windows.Forms.Label
+$ManagerLabel.Location = New-Object System.Drawing.Point(20,230)
+$ManagerLabel.Size = New-Object System.Drawing.Size(100,20)
+$ManagerLabel.Text = "Manager:"
+$Form.Controls.Add($ManagerLabel)
+
+#region ADD CHECK INSTALATION BUTTON
+$CheckInstallationButton = New-Object System.Windows.Forms.Button
+$CheckInstallationButton.Location = New-Object System.Drawing.Point(20,250)
+$CheckInstallationButton.Size = New-Object System.Drawing.Size(100,30)
+$CheckInstallationButton.Text = "Checker"
+$CheckInstallationButton.Add_Click({
+
+    $Overlay = Show-Overlay -Message "Checking installation..." -Opacity 80 -ParentForm $Form
+
+    try {
+
+        $targetDir = "C:\Windows\UDCPCAdmin"
+        $requiredFiles = @(
+            "keyhook_locker.exe",
+            "QR.png",
+            "runner.vbs",
+            "validator.ps1",
+            "wrapper.ps1"
+        )
+
+        $missingFiles = @()
+
+        foreach ($file in $requiredFiles) {
+            if (-not (Test-Path (Join-Path $targetDir $file))) {
+                $missingFiles += $file
+            }
+        }
+
+        if ($missingFiles.Count -eq 0) {
+
+            [System.Windows.Forms.MessageBox]::Show( "All required files are present in $targetDir", "Installation Check", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+
+			$UpdateMasterPasswordButton.Enabled = $true
+			$UpdatePcNumberButton.Enabled = $true
+
+        } else {
+            [System.Windows.Forms.MessageBox]::Show( "Missing files:`n`n$($missingFiles -join "`n")", "Installation Check Failed", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning )
+        }
+
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show( "Error checking installation: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+    }
+
+    Hide-Overlay -OverlayForm $Overlay
+})
+$Form.Controls.Add($CheckInstallationButton)
+
+#region ADD MASTER PASSWORD LABEL
+$MasterPasswordLabel = New-Object System.Windows.Forms.Label
+$MasterPasswordLabel.Location = New-Object System.Drawing.Point(20,290)
+$MasterPasswordLabel.Size = New-Object System.Drawing.Size(100,20)
+$MasterPasswordLabel.Text = "Master Password:"
+$Form.Controls.Add($MasterPasswordLabel)
+
+#region ADD MASTER PASSWORD TEXTBOX
+$MasterPasswordTextBox = New-Object System.Windows.Forms.TextBox
+$MasterPasswordTextBox.Location = New-Object System.Drawing.Point(130,290)
+$MasterPasswordTextBox.Size = New-Object System.Drawing.Size(200,20)
+# $MasterPasswordTextBox.UseSystemPasswordChar = $true
+$Form.Controls.Add($MasterPasswordTextBox)
+
+#region ADD MASTER PASSWORD UPDATE
+$UpdateMasterPasswordButton = New-Object System.Windows.Forms.Button
+$UpdateMasterPasswordButton.Location = New-Object System.Drawing.Point(340,290)
+$UpdateMasterPasswordButton.Size = New-Object System.Drawing.Size(100,30)
+$UpdateMasterPasswordButton.Text = "Update"
+$UpdateMasterPasswordButton.Enabled = $false
+$UpdateMasterPasswordButton.Add_Click({
+
+    $Overlay = Show-Overlay -Message "Updating Master Password..." -Opacity 80 -ParentForm $Form
+
+    try {
+
+		[int]$masterPassword = $MasterPasswordTextBox.Text
+        $targetDir = "C:\Windows\UDCPCAdmin"
+        $validatorPath = Join-Path $targetDir "validator.ps1"
+
+        if (Test-Path $validatorPath) {
+
+            $content = Get-Content $validatorPath
+
+            $content[0] = "`$MASTER_PASSWORD = `"$masterPassword`""
+
+            Set-Content -Path $validatorPath -Value $content -Force
+
+            [System.Windows.Forms.MessageBox]::Show( "Master password updated successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+        } else {
+            throw "Validator.ps1 file not found in $targetDir"
+        }
+
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show( "Error updating master password: $($_.Exception.Message)", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+	}
+
+    Hide-Overlay -OverlayForm $Overlay
+
+})
+$Form.Controls.Add($UpdateMasterPasswordButton)
+
+#region ADD PC NUMBER LABEL
+$PcNumberLabel = New-Object System.Windows.Forms.Label
+$PcNumberLabel.Location = New-Object System.Drawing.Point(20,330)
+$PcNumberLabel.Size = New-Object System.Drawing.Size(100,20)
+$PcNumberLabel.Text = "PC Number:"
+$Form.Controls.Add($PcNumberLabel)
+
+#region ADD PC NUMBER TEXTBOX
+$PcNumberTextBox = New-Object System.Windows.Forms.TextBox
+$PcNumberTextBox.Location = New-Object System.Drawing.Point(130,330)
+$PcNumberTextBox.Size = New-Object System.Drawing.Size(200,20)
+$Form.Controls.Add($PcNumberTextBox)
+
+#region ADD PC NUMBER UPDATE BUTTON
+$UpdatePcNumberButton = New-Object System.Windows.Forms.Button
+$UpdatePcNumberButton.Location = New-Object System.Drawing.Point(340,330)
+$UpdatePcNumberButton.Size = New-Object System.Drawing.Size(100,30)
+$UpdatePcNumberButton.Text = "Update"
+$UpdatePcNumberButton.Enabled = $false
+$UpdatePcNumberButton.Add_Click({
+    $Overlay = Show-Overlay -Message "Updating PC Number..." -Opacity 80 -ParentForm $Form
+
+    try {
+
+		# Load existing PC number if file exists
+		if (Test-Path "C:\Windows\windows_pc.cfg") {
+			$PcNumberTextBox.Text = Get-Content "C:\Windows\windows_pc.cfg"
+		}
+
+        [int]$pcNumber = $PcNumberTextBox.Text
+
+        if ($pcNumber -lt 1 -or $pcNumber -gt 99) {
+            throw "PC Number must be between 1 and 99"
+        }
+
+        $formattedNumber = "{0:D2}" -f $pcNumber
+
+        Set-Content -Path "C:\Windows\windows_pc.cfg" -Value $formattedNumber -Force
+
+        [System.Windows.Forms.MessageBox]::Show("PC number updated successfully to: $formattedNumber","Success",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Information)
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("Error updating PC number: $($_.Exception.Message)","Error",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+
+    Hide-Overlay -OverlayForm $Overlay
+})
+$Form.Controls.Add($UpdatePcNumberButton)
+
+# Main form loop
+[void]$Form.ShowDialog()

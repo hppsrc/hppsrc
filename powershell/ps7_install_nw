@@ -1,0 +1,60 @@
+$ErrorActionPreference = "Stop"
+
+if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+	Write-Host "You have to run this script as admin." -ForegroundColor Red
+	exit 1
+}
+
+$pwshPaths = @(
+	"$env:ProgramFiles\PowerShell\7\pwsh.exe",
+	"$env:ProgramFiles\PowerShell\7-preview\pwsh.exe"
+)
+
+$isInstalled = $false
+foreach ($path in $pwshPaths) {
+	if (Test-Path $path) {
+		$isInstalled = $true
+		break
+	}
+}
+
+if ($isInstalled) {
+	Write-Host "PowerShell 7 or later is already installed." -ForegroundColor Green
+	exit 0
+}
+
+try {
+
+	$apiUrl = "https://api.github.com/repos/PowerShell/PowerShell/releases/latest"
+	$headers = @{ "User-Agent" = "PowerShellScript" }
+
+	Write-Host "Checking for latest PowerShell version..."
+	$response = Invoke-RestMethod -Uri $apiUrl -Headers $headers
+	$latestVersion = $response.tag_name
+	$assets = $response.assets
+
+	$arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
+
+	$installer = $assets | Where-Object { $_.name -match "win-${arch}.msi" }
+
+	if (-not $installer) {
+		Write-Host "Installer for architecture $arch not found." -ForegroundColor Red
+		exit 1
+	}
+
+	$downloadUrl = $installer.browser_download_url
+	$tempPath = "$env:TEMP\PowerShell-$latestVersion-$arch.msi"
+
+	Write-Host "Downloading PowerShell $latestVersion ($arch)..."
+	Invoke-WebRequest -Uri $downloadUrl -OutFile $tempPath
+
+	Write-Host "Installing PS7 quiet..."
+	Start-Process "msiexec.exe" -ArgumentList "/i `"$tempPath`" /qn /norestart" -Wait
+
+	Write-Host "Installation complete."
+	Remove-Item $tempPath -Force
+
+
+} catch {
+	Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+}

@@ -8,9 +8,33 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+app.get('/', (req, res) => {
+	res.sendFile(path.join(__dirname, 'index.html'));
+});
 
-app.get('/api/', (req, res) => { res.sendFile(path.join(__dirname, 'api', 'index.html')); });
+app.get('/api/', (req, res) => {
+
+	const userAgent = req.get('User-Agent');
+    if (userAgent.includes('PowerShell')) { return res.status(200).send('<h1>Please check the API guide on https://hppsrc.vercel.app/api</h1>'); }
+
+	res.sendFile(path.join(__dirname, 'api', 'index.html'));
+
+});
+
+app.get('/api/dl/:file', (req, res) => {
+
+	const fileName = req.params.file;
+	const filePath = path.join(__dirname, 'api', 'dl', fileName);
+
+	fs.access(filePath, fs.constants.F_OK, (err) => {
+		if (err) { return res.status(404).send('File not found'); }
+
+		res.download(filePath, fileName, (err) => {
+			if (err) { console.error(err); }
+		});
+	});
+
+});
 
 app.get('/api/ps-:script', (req, res) => {
 
