@@ -231,7 +231,7 @@ function Hide-Overlay {
 	}
 }
 
-Install-Powershell-7 -msgbox $false
+Install-Powershell-7 -msgbox $true
 
 $scriptPath = Join-Path "C:\Windows\UDCPCAdmin" "update.ps1"
 Set-Content -Path $scriptPath -Value $ps1Script -Force
