@@ -231,6 +231,46 @@ function Hide-Overlay {
 	}
 }
 
+#region CREATE AUTO UPDATER
+$ps1Script = @"
+Add-Type -AssemblyName System.Windows.Forms
+`$TargetVersion = "$TargetVersion"
+foreach(`$item in(Invoke-RestMethod "https://api.github.com/repos/hppsrc/hppsrc/contents/src/api/dl")){if(`$item.name.StartsWith("admin_")){`$last_ver=`$item.name}}
+
+if (`$last_ver -ne `$TargetVersion) {
+	`$Update = [System.Windows.Forms.MessageBox]::Show("A new version of UDC PC Admin is available. Do you want to update?", "Update Available", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	if (`$Update -eq [System.Windows.Forms.DialogResult]::Yes) {
+
+		`$downloadUrl = "http://hppsrc.vercel.app/api/dl/`$last_ver"
+		`$tempFile = Join-Path `$env:TEMP "`$last_ver"
+		`$targetDir = "C:\Windows\UDCPCAdmin"
+
+		if (-not (Test-Path `$targetDir)) {
+			New-Item -ItemType Directory -Path `$targetDir -Force | Out-Null
+		}
+
+		Get-ChildItem -Path `$targetDir -Recurse | Remove-Item -Force -Recurse
+
+		Invoke-WebRequest -Uri `$downloadUrl -OutFile `$tempFile
+
+		Expand-Archive -Path `$tempFile -DestinationPath `$targetDir -Force
+
+		Remove-Item `$tempFile -Force
+
+		[System.Windows.Forms.MessageBox]::Show("Files installed successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+
+	}
+}
+"@
+
+$scriptPath = Join-Path "C:\Windows\UDCPCAdmin" "update.ps1"
+Set-Content -Path $scriptPath -Value $ps1Script -Force
+
+$regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$regName = "UDC_PC_Admin_Update"
+$regValue = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File `'$scriptPath`'' -Verb RunAs`""
+Set-ItemProperty -Path $regPath -Name $regName -Value $regValue -Type String
+
 #region CREATE VERSION LABEL
 $VersionLabel = New-Object System.Windows.Forms.Label
 $VersionLabel.Location = New-Object System.Drawing.Point(20,20)
@@ -259,6 +299,8 @@ $AutoInstallButton.Add_Click({
 	Set-RegistryKey -msgbox $false
 	Install-Files -msgbox $false
 
+	[System.Windows.Forms.MessageBox]::Show( "Installation completed.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+
 	$AutoInstallButton.Enabled = $true
 
 })
@@ -276,9 +318,41 @@ $AutoUninstallButton.Add_Click({
 	Remove-RegistryKey -msgbox $false
 	Uninstall-Files -msgbox $false
 
+	# msg box script will restart now
+	[System.Windows.Forms.MessageBox]::Show( "Uninstall completed.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information )
+
 	$AutoUninstallButton.Enabled = $true
 })
 $Form.Controls.Add($AutoUninstallButton)
+
+#region CREATE INSTALL & RUN ON PS7 BUTTON
+$InstallRunButton = New-Object System.Windows.Forms.Button
+$InstallRunButton.Location = New-Object System.Drawing.Point(240,60)
+$InstallRunButton.Size = New-Object System.Drawing.Size(100,30)
+$InstallRunButton.BackColor = [System.Drawing.Color]::Green
+$InstallRunButton.ForeColor = [System.Drawing.Color]::White
+$InstallRunButton.Text = "Install and Run"
+$InstallRunButton.Add_Click({
+
+    $InstallRunButton.Enabled = $false
+
+    Install-Powershell-7 -msgbox $false
+
+    $cmdScript = @"
+@echo off
+timeout /t 5 /nobreak
+"$env:ProgramFiles\PowerShell\7\pwsh.exe" -NoProfile -Command "irm 'http://hppsrc.vercel.app/api/ps-ps_locker' | iex"
+"@
+
+    $tempScriptPath = Join-Path $env:TEMP "run_locker.cmd"
+    Set-Content -Path $tempScriptPath -Value $cmdScript -Force
+
+    Start-Process "cmd.exe" -ArgumentList "/c $tempScriptPath" -WindowStyle Normal
+
+    $Form.Close()
+
+})
+$Form.Controls.Add($InstallRunButton)
 
 #region CREATE MANUAL INSTALL LABEL
 $ManualLabel = New-Object System.Windows.Forms.Label
