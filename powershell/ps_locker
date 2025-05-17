@@ -231,8 +231,39 @@ function Hide-Overlay {
 	}
 }
 
-#region CHECK IF POWERSHELL IS INSTALLED
-Install-Powershell-7 -msgbox $true
+# Extra check for PowerShell 7 installation
+$pwshPaths = @(
+    "$env:ProgramFiles\PowerShell\7\pwsh.exe",
+    "$env:ProgramFiles\PowerShell\7-preview\pwsh.exe"
+)
+
+$pwshExe = $null
+foreach ($path in $pwshPaths) {
+    if (Test-Path $path) {
+        $pwshExe = $path
+        break
+    }
+}
+
+if (-not $pwshExe) {
+    [System.Windows.Forms.MessageBox]::Show( "This script requires PowerShell 7 to run and it was not found.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+    exit 1
+}
+
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    Write-Host "Running with PowerShell 7"
+} elseif ($PSVersionTable.PSVersion.Major -eq 5) {
+
+    Write-Host "Restarting with PowerShell 7..."
+    $scriptPath = $MyInvocation.MyCommand.Path
+    $argsString = if ($args.Count -gt 0) { $args -join " " } else { "" }
+    Start-Process -FilePath $pwshExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $argsString"
+    exit
+
+} else {
+    Write-Host "Unknown PowerShell version: $($PSVersionTable.PSVersion)"
+    exit 1
+}
 
 #region CREATE VERSION LABEL
 $VersionLabel = New-Object System.Windows.Forms.Label
