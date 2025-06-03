@@ -231,45 +231,39 @@ function Hide-Overlay {
 	}
 }
 
-#region CREATE AUTO UPDATER
-$ps1Script = @"
-Add-Type -AssemblyName System.Windows.Forms
-`$TargetVersion = "$TargetVersion"
-foreach(`$item in(Invoke-RestMethod "https://api.github.com/repos/hppsrc/hppsrc/contents/src/api/dl")){if(`$item.name.StartsWith("admin_")){`$last_ver=`$item.name}}
+# Extra check for PowerShell 7 installation
+$pwshPaths = @(
+    "$env:ProgramFiles\PowerShell\7\pwsh.exe",
+    "$env:ProgramFiles\PowerShell\7-preview\pwsh.exe"
+)
 
-if (`$last_ver -ne `$TargetVersion) {
-	`$Update = [System.Windows.Forms.MessageBox]::Show("A new version of UDC PC Admin is available. Do you want to update?", "Update Available", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
-	if (`$Update -eq [System.Windows.Forms.DialogResult]::Yes) {
-
-		`$downloadUrl = "http://hppsrc.vercel.app/api/dl/`$last_ver"
-		`$tempFile = Join-Path `$env:TEMP "`$last_ver"
-		`$targetDir = "C:\Windows\UDCPCAdmin"
-
-		if (-not (Test-Path `$targetDir)) {
-			New-Item -ItemType Directory -Path `$targetDir -Force | Out-Null
-		}
-
-		Get-ChildItem -Path `$targetDir -Recurse | Remove-Item -Force -Recurse
-
-		Invoke-WebRequest -Uri `$downloadUrl -OutFile `$tempFile
-
-		Expand-Archive -Path `$tempFile -DestinationPath `$targetDir -Force
-
-		Remove-Item `$tempFile -Force
-
-		[System.Windows.Forms.MessageBox]::Show("Files installed successfully!", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-
-	}
+$pwshExe = $null
+foreach ($path in $pwshPaths) {
+    if (Test-Path $path) {
+        $pwshExe = $path
+        break
+    }
 }
-"@
 
-$scriptPath = Join-Path "C:\Windows\UDCPCAdmin" "update.ps1"
-Set-Content -Path $scriptPath -Value $ps1Script -Force
+if (-not $pwshExe) {
+    [System.Windows.Forms.MessageBox]::Show( "This script requires PowerShell 7 to run and it was not found.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error )
+    exit 1
+}
 
-$regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$regName = "UDC_PC_Admin_Update"
-$regValue = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File `'$scriptPath`'' -Verb RunAs`""
-Set-ItemProperty -Path $regPath -Name $regName -Value $regValue -Type String
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    Write-Host "Running with PowerShell 7"
+} elseif ($PSVersionTable.PSVersion.Major -eq 5) {
+
+    Write-Host "Restarting with PowerShell 7..."
+    $scriptPath = $MyInvocation.MyCommand.Path
+    $argsString = if ($args.Count -gt 0) { $args -join " " } else { "" }
+    Start-Process -FilePath $pwshExe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $argsString"
+    exit
+
+} else {
+    Write-Host "Unknown PowerShell version: $($PSVersionTable.PSVersion)"
+    exit 1
+}
 
 #region CREATE VERSION LABEL
 $VersionLabel = New-Object System.Windows.Forms.Label
