@@ -12,8 +12,6 @@ My website: https://hppsrc.site
 
 [![GitHub](https://img.shields.io/badge/GitHub-@hppsrc-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/hppsrc)
 |
-[![Email](https://img.shields.io/badge/Gmail-hppsrc@gmail.com-d24036?style=flat-square&logo=gmail)](mailto:hppsrc@gmail.com)
-|
 [![Profile Views](https://komarev.com/ghpvc/?username=hppsrc&style=flat-square)]()
 
 
@@ -33,8 +31,9 @@ My website: https://hppsrc.site
 ![PHP](https://img.shields.io/badge/PHP-777BB4?style=flat-square&logo=php&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Express](https://img.shields.io/badge/Express%20JS-000?style=flat-square&logo=express&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
-![Neon](https://img.shields.io/badge/Neon-3ECF8E?style=flat-square&logo=neonpostgres&logoColor=white)
+![Neon](https://img.shields.io/badge/Neon-00e599?style=flat-square&logo=neonpostgres&logoColor=white)
 
 <!-- ### Programming Languages
 ![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=black)
